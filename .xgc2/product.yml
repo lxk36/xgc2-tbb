@@ -1,7 +1,7 @@
 schema: xgc2.product.v1
 id: xgc2-tbb
 name: XGC2 oneTBB
-version: 0.1.0-8
+version: 0.1.0-9
 kind: toolchain-apt
 summary: System-level oneAPI Threading Building Blocks runtime for XGC2 projects on
   Ubuntu 20.04, 22.04, and 24.04.
@@ -41,9 +41,9 @@ release:
   ref: master
   workflow: release.yml
   apt_versions:
-    focal: 0.1.0-8~focal
-    jammy: 0.1.0-8~jammy
-    noble: 0.1.0-8~noble
+    focal: 0.1.0-9~focal
+    jammy: 0.1.0-9~jammy
+    noble: 0.1.0-9~noble
 conflicts:
   apt_packages:
   - ros-noetic-xgc2-tbb
