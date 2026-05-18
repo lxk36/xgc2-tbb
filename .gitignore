@@ -1,0 +1,10 @@
+build/
+devel/
+install/
+.catkin_tools/
+.ci/
+.tbb_vendor/
+third_party/oneTBB/
+third_party/oneTBB-*
+*.pyc
+__pycache__/

@@ -1,0 +1,142 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - noetic
+  pull_request:
+    branches:
+      - noetic
+  workflow_dispatch:
+
+jobs:
+  package-compliance:
+    runs-on: ubuntu-22.04
+    container:
+      image: osrf/ros:noetic-desktop-full
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install CI tools
+        run: |
+          set -euo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Check whitespace
+        run: git -C "${GITHUB_WORKSPACE}" diff --check HEAD
+
+      - name: Package compliance
+        run: |
+          set -euo pipefail
+          cd "${GITHUB_WORKSPACE}"
+          ./scripts/check_package_compliance.sh
+
+  noetic-build-and-test:
+    runs-on: ubuntu-22.04
+    container:
+      image: osrf/ros:noetic-desktop-full
+    defaults:
+      run:
+        shell: bash
+    env:
+      TBB_VENDOR_JOBS: "2"
+    steps:
+      - name: Install CI tools
+        run: |
+          set -euo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git g++
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Prepare workspace
+        run: |
+          set -euo pipefail
+          mkdir -p "${GITHUB_WORKSPACE}/.ci/ws/src/tbb_vendor"
+          tar \
+            --exclude=.git \
+            --exclude=.ci \
+            -C "${GITHUB_WORKSPACE}" \
+            -cf - . | tar -x -C "${GITHUB_WORKSPACE}/.ci/ws/src/tbb_vendor"
+
+      - name: Build vendor package
+        run: |
+          set -euo pipefail
+          export ROS_MASTER_URI="${ROS_MASTER_URI:-http://localhost:11311}"
+          vendor_lib="${GITHUB_WORKSPACE}/.ci/ws/devel/.tbb_vendor/install/lib"
+          export LD_LIBRARY_PATH="${vendor_lib}:${LD_LIBRARY_PATH:-}"
+          source /opt/ros/noetic/setup.bash
+          cd "${GITHUB_WORKSPACE}/.ci/ws"
+          catkin_make --pkg tbb_vendor
+
+      - name: Check runtime libraries
+        run: |
+          set -euo pipefail
+          vendor_lib="${GITHUB_WORKSPACE}/.ci/ws/devel/.tbb_vendor/install/lib"
+          test -f "${vendor_lib}/libtbb.so"
+          export LD_LIBRARY_PATH="${vendor_lib}:${LD_LIBRARY_PATH:-}"
+          ldd "${vendor_lib}/libtbb.so" | tee /tmp/tbb-ldd.txt
+          if grep -q "not found" /tmp/tbb-ldd.txt; then
+            exit 1
+          fi
+
+      - name: Compile and run oneTBB probe
+        run: |
+          set -euo pipefail
+          vendor_prefix="${GITHUB_WORKSPACE}/.ci/ws/devel/.tbb_vendor/install"
+          mkdir -p /tmp/tbb-vendor-probe
+          cat > /tmp/tbb-vendor-probe/probe.cpp <<'CPP'
+          #include <oneapi/tbb/parallel_reduce.h>
+          #include <oneapi/tbb/task_group.h>
+          #include <oneapi/tbb/blocked_range.h>
+
+          #include <atomic>
+          #include <cstddef>
+          #include <functional>
+          #include <iostream>
+
+          int main() {
+            const std::size_t sum = oneapi::tbb::parallel_reduce(
+                oneapi::tbb::blocked_range<std::size_t>(0, 1000),
+                std::size_t{0},
+                [](const oneapi::tbb::blocked_range<std::size_t>& r, std::size_t local) {
+                  for (std::size_t i = r.begin(); i != r.end(); ++i) {
+                    local += i;
+                  }
+                  return local;
+                },
+                std::plus<std::size_t>{});
+
+            std::atomic<int> value{0};
+            oneapi::tbb::task_group tasks;
+            tasks.run([&] { value.fetch_add(1, std::memory_order_relaxed); });
+            tasks.run([&] { value.fetch_add(2, std::memory_order_relaxed); });
+            tasks.wait();
+
+            if (sum != 499500 || value.load(std::memory_order_relaxed) != 3) {
+              return 1;
+            }
+            std::cout << "oneTBB probe passed" << std::endl;
+            return 0;
+          }
+          CPP
+          g++ -std=c++17 \
+            -I"${vendor_prefix}/include" \
+            /tmp/tbb-vendor-probe/probe.cpp \
+            -L"${vendor_prefix}/lib" \
+            -Wl,-rpath,"${vendor_prefix}/lib" \
+            -ltbb \
+            -o /tmp/tbb-vendor-probe/probe
+          /tmp/tbb-vendor-probe/probe
