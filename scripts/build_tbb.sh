@@ -3,13 +3,21 @@
 set -euo pipefail
 
 package_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-workspace_dir="${TBB_VENDOR_WS:-${package_dir}/.ci/ws}"
+workspace_dir="${XGC2_TBB_WS:-${TBB_VENDOR_WS:-${package_dir}/.ci/ws}}"
 
-rm -rf "${workspace_dir}/src/tbb_vendor"
+rm -rf "${workspace_dir}/src/xgc2_tbb"
 mkdir -p "${workspace_dir}/src"
-cp -a "${package_dir}" "${workspace_dir}/src/tbb_vendor"
-rm -rf "${workspace_dir}/src/tbb_vendor/.git"
+mkdir -p "${workspace_dir}/src/xgc2_tbb"
+tar \
+  --exclude=.git \
+  --exclude=.ci \
+  --exclude=build \
+  --exclude=devel \
+  --exclude=install \
+  --exclude=third_party/oneTBB \
+  -C "${package_dir}" \
+  -cf - . | tar -x -C "${workspace_dir}/src/xgc2_tbb"
 
 source /opt/ros/noetic/setup.bash
 cd "${workspace_dir}"
-catkin_make --pkg tbb_vendor
+catkin_make --pkg xgc2_tbb

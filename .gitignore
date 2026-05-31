@@ -4,6 +4,7 @@ install/
 .catkin_tools/
 .ci/
 .tbb_vendor/
+.xgc2_tbb/
 third_party/oneTBB/
 third_party/oneTBB-*
 *.pyc
