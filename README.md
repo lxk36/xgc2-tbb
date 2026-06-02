@@ -11,7 +11,7 @@ XGC2 packages should depend on this system package instead of `xgc2_tbb` or
 
 - Pinning the upstream oneTBB source version in `tbb.lock`.
 - Fetching upstream source during CI/build.
-- Publishing `xgc2-tbb` for Ubuntu 20.04 and 24.04 on amd64 and arm64.
+- Publishing `xgc2-tbb` for Ubuntu 20.04, 22.04, and 24.04 on amd64 and arm64.
 - Installing oneTBB under `/opt/xgc2/tbb`.
 - Exporting CMake variables through `xgc2_tbbConfig.cmake`.
 
@@ -78,9 +78,9 @@ sudo apt-get install -y ./.ci/debs/xgc2-tbb_*.deb
 ./.xgc2/scripts/smoke_test_installed.sh
 ```
 
-The GitHub CI runs the same build and smoke test inside Ubuntu 20.04 and 24.04
-containers for amd64 and arm64, then publishes the resulting debs to the XGC2
-APT repository.
+The GitHub CI runs the same build and smoke test inside Ubuntu 20.04, 22.04,
+and 24.04 containers for amd64 and arm64, then publishes the resulting debs to
+the XGC2 APT repository.
 
 ## Branches
 
