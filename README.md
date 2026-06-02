@@ -79,7 +79,7 @@ source-level compatibility aliases after `find_package(xgc2_tbb)`.
 Build the Noetic/Focal Debian package locally:
 
 ```bash
-./scripts/build_deb.sh
+./.xgc2/scripts/build_deb.sh
 ```
 
 The package is written under:
@@ -92,7 +92,7 @@ Install and smoke test it in a Noetic environment:
 
 ```bash
 sudo apt-get install ./.ci/debs/ros-noetic-xgc2-tbb_*.deb
-./scripts/smoke_test_installed.sh
+./.xgc2/scripts/smoke_test_installed.sh
 ```
 
 The smoke test verifies the installed package path, checks `libtbb.so` dynamic

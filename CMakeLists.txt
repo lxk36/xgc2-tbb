@@ -69,7 +69,7 @@ ExternalProject_Add(xgc2_tbb_external
       TBB_VENDOR_GIT_REPOSITORY=${TBB_REPOSITORY}
       TBB_VENDOR_GIT_TAG=${XGC2_TBB_GIT_TAG}
       TBB_VENDOR_SOURCE_DIR=${XGC2_TBB_SOURCE_DIR}
-      bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/fetch_tbb.sh
+      bash ${CMAKE_CURRENT_SOURCE_DIR}/.xgc2/scripts/fetch_tbb.sh
   UPDATE_COMMAND ""
   CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=${XGC2_TBB_INSTALL_PREFIX}
@@ -131,17 +131,6 @@ install(DIRECTORY "${XGC2_TBB_INSTALL_PREFIX}/"
 
 install(DIRECTORY cmake/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
-)
-
-install(PROGRAMS
-  scripts/build_tbb.sh
-  scripts/build_deb.sh
-  scripts/check_package_compliance.sh
-  scripts/fetch_tbb.sh
-  scripts/publish_apt_repo.sh
-  scripts/publish_self_hosted_apt.sh
-  scripts/smoke_test_installed.sh
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES README.md tbb.lock
