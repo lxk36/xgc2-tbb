@@ -1,118 +1,88 @@
-# xgc2_tbb
+# xgc2-tbb
 
-ROS1 Noetic vendor package for the XGC2 oneAPI Threading Building Blocks
-runtime. Bloom produces the Debian package name `ros-noetic-xgc2-tbb`.
+This repository wraps upstream oneAPI Threading Building Blocks as a native
+Debian package named `xgc2-tbb`. It is not a ROS or catkin package on the
+`master` branch.
 
-The package pins an upstream oneTBB version, fetches the source into a local
-cache, builds it with CMake, installs the runtime into a catkin install/share
-layout, and exports include/library paths to downstream catkin packages.
+XGC2 packages should depend on this system package instead of `xgc2_tbb` or
+`tbb_vendor`.
 
-## What This Package Owns
+## Scope
 
 - Pinning the upstream oneTBB source version in `tbb.lock`.
-- Fetching oneTBB into `third_party/oneTBB`.
-- Building oneTBB into the catkin devel space under `.xgc2_tbb/install`.
-- Installing oneTBB into `share/xgc2_tbb/oneTBB` for the Debian package.
-- Exporting include paths and libraries to downstream catkin packages.
+- Fetching upstream source during CI/build.
+- Publishing `xgc2-tbb` for Ubuntu 20.04 and 24.04 on amd64 and arm64.
+- Installing oneTBB under `/opt/xgc2/tbb`.
+- Exporting CMake variables through `xgc2_tbbConfig.cmake`.
 
-It does not commit oneTBB source, upstream `.git` metadata, or build artifacts.
+This repository is a wrapper. It does not commit the upstream oneTBB source
+tree.
 
-## Build
-
-Inside a ROS1 workspace:
-
-```bash
-catkin_make --pkg xgc2_tbb
-```
-
-The build output is generated under:
-
-```text
-devel/.xgc2_tbb/
-```
-
-The upstream source cache is generated under:
-
-```text
-src/common/tbb_vendor/third_party/oneTBB/
-```
-
-For runtime linking of downstream nodes:
+## Install
 
 ```bash
-source devel/setup.bash
+sudo apt update
+sudo apt install xgc2-tbb
 ```
 
-## Downstream Usage
+Installed layout:
+
+```text
+/opt/xgc2/tbb/
+/opt/xgc2/tbb/include/
+/opt/xgc2/tbb/lib/
+/opt/xgc2/tbb/setup.bash
+/usr/lib/cmake/xgc2_tbb/xgc2_tbbConfig.cmake
+/etc/ld.so.conf.d/xgc2-tbb.conf
+```
+
+## CMake Consumers
 
 ```cmake
-find_package(catkin REQUIRED COMPONENTS
-  xgc2_tbb
-  roscpp
-)
-
+find_package(xgc2_tbb REQUIRED CONFIG)
 xgc2_tbb_require()
 
-include_directories(
+target_include_directories(your_target PRIVATE
   ${XGC2_TBB_INCLUDE_DIRS}
 )
-
-add_executable(your_target src/main.cpp)
-add_dependencies(your_target ${catkin_EXPORTED_TARGETS})
-if(TARGET xgc2_tbb_build)
-  add_dependencies(your_target xgc2_tbb_build)
-endif()
-
 target_link_libraries(your_target
-  ${catkin_LIBRARIES}
   ${XGC2_TBB_LIBRARIES}
 )
 ```
 
-`XGC2_TBB_LIBRARIES` links the core oneTBB runtime. If a downstream target
-explicitly uses scalable malloc, also link `${XGC2_TBB_MALLOC_LIBRARIES}`.
-The old `TBB_VENDOR_*` variables and `tbb_vendor_require()` macro remain as
-source-level compatibility aliases after `find_package(xgc2_tbb)`.
+The config also defines the imported target `xgc2_tbb::tbb`.
 
-## Debian Package
+Compatibility variables are exported for old `tbb_vendor` naming:
 
-Build the Noetic/Focal Debian package locally:
+```cmake
+${TBB_VENDOR_INCLUDE_DIRS}
+${TBB_VENDOR_LIBRARIES}
+tbb_vendor_require()
+```
+
+## Shell Setup
 
 ```bash
+source /opt/xgc2/tbb/setup.bash
+```
+
+The setup file exports `XGC2_TBB_*`, prepends `/opt/xgc2/tbb/lib` to
+`LD_LIBRARY_PATH`, and prepends `/opt/xgc2/tbb` to `CMAKE_PREFIX_PATH`.
+
+## Build Locally
+
+```bash
+./.xgc2/scripts/check_package_compliance.sh
 ./.xgc2/scripts/build_deb.sh
-```
-
-The package is written under:
-
-```text
-.ci/debs/ros-noetic-xgc2-tbb_<version>_<arch>.deb
-```
-
-Install and smoke test it in a Noetic environment:
-
-```bash
-sudo apt-get install ./.ci/debs/ros-noetic-xgc2-tbb_*.deb
+sudo apt-get install -y ./.ci/debs/xgc2-tbb_*.deb
 ./.xgc2/scripts/smoke_test_installed.sh
 ```
 
-The smoke test verifies the installed package path, checks `libtbb.so` dynamic
-dependencies, builds a small catkin package against `xgc2_tbb`, and runs a
-parallel oneTBB probe.
+The GitHub CI runs the same build and smoke test inside Ubuntu 20.04 and 24.04
+containers for amd64 and arm64, then publishes the resulting debs to the XGC2
+APT repository.
 
-## CI And APT Publishing
+## Branches
 
-`.github/workflows/ci.yml` runs package compliance, builds debs for amd64 and
-arm64 in `ros:noetic-ros-base-focal`, installs the deb, runs the smoke test, and
-generates a flat APT repository artifact.
-
-To publish to a self-hosted repository on non-PR CI runs, provide these secrets:
-
-```text
-APT_REPO_HOST
-APT_REPO_PORT
-APT_REPO_USER
-APT_REPO_SSH_KEY
-APT_REPO_KNOWN_HOSTS
-```
-
-No private repository URL is hardcoded in this package.
+- `master`: native system package, active branch.
+- `noetic`: old ROS Noetic vendor package backup.

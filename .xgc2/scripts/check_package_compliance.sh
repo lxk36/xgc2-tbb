@@ -5,7 +5,6 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
-xmllint --noout package.xml
 bash -n .xgc2/scripts/*.sh
 
 nested_git="$(
@@ -19,7 +18,7 @@ nested_git="$(
     -name .git -print
 )"
 if [[ -n "${nested_git}" ]]; then
-  echo "Nested .git directory found. xgc2_tbb must not vendor submodules directly." >&2
+  echo "Nested .git directory found. xgc2-tbb must not vendor submodules directly." >&2
   echo "${nested_git}" >&2
   exit 1
 fi
@@ -31,16 +30,14 @@ if git ls-files | grep -E '(^|/)(build|devel|install|third_party/oneTBB|\.tbb_ve
 fi
 
 required_files=(
-  package.xml
-  CMakeLists.txt
+  README.md
   tbb.lock
   .github/workflows/ci.yml
   .github/workflows/update-tbb.yml
-  cmake/xgc2_tbb-extras.cmake
-  cmake/tbb_vendor-extras.cmake
-  env-hooks/99.xgc2_tbb.sh.develspace.in
-  env-hooks/99.xgc2_tbb.sh.installspace.in
+  .xgc2/product.yml
   .xgc2/scripts/build_deb.sh
+  .xgc2/scripts/build_tbb.sh
+  .xgc2/scripts/fetch_tbb.sh
   .xgc2/scripts/publish_apt_repo.sh
   .xgc2/scripts/publish_self_hosted_apt.sh
   .xgc2/scripts/smoke_test_installed.sh
@@ -53,14 +50,21 @@ for file in "${required_files[@]}"; do
   fi
 done
 
+for removed_file in CMakeLists.txt package.xml cmake/xgc2_tbb-extras.cmake cmake/tbb_vendor-extras.cmake; do
+  if [[ -e "${removed_file}" ]]; then
+    echo "master system package branch must not keep ROS/catkin file: ${removed_file}" >&2
+    exit 1
+  fi
+done
+
+if [[ -d env-hooks || -d cmake ]]; then
+  echo "master system package branch must not keep ROS env-hook/cmake package directories." >&2
+  exit 1
+fi
+
 if ! grep -q '^TBB_REF=' tbb.lock; then
   echo "tbb.lock must pin TBB_REF." >&2
   exit 1
 fi
 
-if ! grep -q '<name>xgc2_tbb</name>' package.xml; then
-  echo "package.xml must declare the xgc2_tbb ROS package name." >&2
-  exit 1
-fi
-
-echo "xgc2_tbb package compliance checks passed."
+echo "xgc2-tbb package compliance checks passed."

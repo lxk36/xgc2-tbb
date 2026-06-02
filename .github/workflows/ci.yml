@@ -3,34 +3,21 @@ name: ci
 on:
   push:
     branches:
-      - noetic
+      - master
   pull_request:
     branches:
-      - noetic
+      - master
   workflow_dispatch:
 
 jobs:
   package-compliance:
-    runs-on: ubuntu-22.04
-    container:
-      image: ros:noetic-ros-base-focal
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
     steps:
-      - name: Install CI tools
-        run: |
-          set -euo pipefail
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            git \
-            libxml2-utils
-
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Trust checkout directory
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Check whitespace
         run: git -C "${GITHUB_WORKSPACE}" diff --check HEAD
@@ -41,25 +28,37 @@ jobs:
           cd "${GITHUB_WORKSPACE}"
           ./.xgc2/scripts/check_package_compliance.sh
 
-  noetic-deb-build-and-smoke:
+  deb-build-and-smoke:
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-22.04
+            runner: ubuntu-latest
             platform: linux/amd64
+            image: ubuntu:20.04
+            distribution: focal
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             platform: linux/arm64
+            image: ubuntu:20.04
+            distribution: focal
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+            image: ubuntu:24.04
+            distribution: noble
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            image: ubuntu:24.04
+            distribution: noble
     defaults:
       run:
         shell: bash
     env:
-      TBB_VENDOR_JOBS: "2"
-      XGC2_TBB_OS_NAME: ubuntu
-      XGC2_TBB_OS_VERSION: focal
+      XGC2_TBB_JOBS: "2"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,45 +70,33 @@ jobs:
             --platform "${{ matrix.platform }}" \
             -v "${GITHUB_WORKSPACE}:/work" \
             -w /work \
-            -e TBB_VENDOR_JOBS="${TBB_VENDOR_JOBS}" \
-            -e XGC2_TBB_OS_NAME="${XGC2_TBB_OS_NAME}" \
-            -e XGC2_TBB_OS_VERSION="${XGC2_TBB_OS_VERSION}" \
-            ros:noetic-ros-base-focal \
+            -e XGC2_TBB_JOBS="${XGC2_TBB_JOBS}" \
+            "${{ matrix.image }}" \
             bash -lc '
               set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
               apt-get update
-              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-                apt-utils \
+              apt-get install -y --no-install-recommends \
                 build-essential \
                 ca-certificates \
                 cmake \
-                debhelper \
+                curl \
                 dpkg-dev \
                 fakeroot \
+                file \
                 git \
-                libxml2-utils \
-                python3-bloom \
-                python3-catkin-pkg-modules \
-                python3-empy \
-                python3-rosdep \
-                python3-rosdep-modules
-              rosdep init 2>/dev/null || true
-              rosdep update
-              rosdep install --from-paths . --ignore-src -r -y --rosdistro noetic
+                python3
               ./.xgc2/scripts/check_package_compliance.sh
               ./.xgc2/scripts/build_deb.sh
-              apt-get install -y ./.ci/debs/*.deb
+              apt-get install -y ./.ci/debs/xgc2-tbb_*.deb
               ./.xgc2/scripts/smoke_test_installed.sh
-              ./.xgc2/scripts/publish_apt_repo.sh ".ci/apt-${{ matrix.arch }}" .ci/debs focal main
             '
 
       - name: Upload deb artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ros-noetic-xgc2-tbb-${{ matrix.arch }}
-          path: |
-            .ci/debs/*.deb
-            .ci/apt-${{ matrix.arch }}/
+          name: xgc2-tbb-${{ matrix.distribution }}-${{ matrix.arch }}
+          path: .ci/debs/*.deb
 
       - name: Publish to self-hosted APT repository
         if: github.event_name != 'pull_request'
@@ -119,5 +106,5 @@ jobs:
           APT_REPO_USER: ${{ secrets.APT_REPO_USER }}
           APT_REPO_SSH_KEY: ${{ secrets.APT_REPO_SSH_KEY }}
           APT_REPO_KNOWN_HOSTS: ${{ secrets.APT_REPO_KNOWN_HOSTS }}
-          APT_REPO_DISTRIBUTION: focal
+          APT_REPO_DISTRIBUTION: ${{ matrix.distribution }}
         run: ./.xgc2/scripts/publish_self_hosted_apt.sh --deb-dir .ci/debs

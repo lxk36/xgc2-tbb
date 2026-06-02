@@ -1,6 +1,0 @@
-export XGC2_TBB_ROOT="@XGC2_TBB_INSTALL_PREFIX@"
-if [ -n "${LD_LIBRARY_PATH:-}" ]; then
-  export LD_LIBRARY_PATH="${XGC2_TBB_ROOT}/lib:${LD_LIBRARY_PATH}"
-else
-  export LD_LIBRARY_PATH="${XGC2_TBB_ROOT}/lib"
-fi

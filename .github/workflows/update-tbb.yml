@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: noetic
+          ref: master
 
       - name: Check latest oneTBB release
         id: latest
@@ -47,7 +47,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: bot/update-onetbb-${{ steps.latest.outputs.latest_tag }}
-          base: noetic
+          base: master
           title: "Update oneTBB to ${{ steps.latest.outputs.latest_tag }}"
           commit-message: "Update oneTBB to ${{ steps.latest.outputs.latest_tag }}"
           body: |
@@ -57,7 +57,7 @@ jobs:
             - Previous SHA override: `${{ steps.latest.outputs.current_sha }}`
             - New ref: `${{ steps.latest.outputs.latest_tag }}`
 
-            This PR must pass package compliance and Noetic build/test before merge.
+            This PR must pass package compliance and native deb build/test before merge.
 
       - name: Enable auto-merge
         if: steps.cpr.outputs.pull-request-number != ''
