@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
 xmllint --noout package.xml
-bash -n scripts/*.sh
+bash -n .xgc2/scripts/*.sh
 
 nested_git="$(
   find . \
@@ -40,10 +40,10 @@ required_files=(
   cmake/tbb_vendor-extras.cmake
   env-hooks/99.xgc2_tbb.sh.develspace.in
   env-hooks/99.xgc2_tbb.sh.installspace.in
-  scripts/build_deb.sh
-  scripts/publish_apt_repo.sh
-  scripts/publish_self_hosted_apt.sh
-  scripts/smoke_test_installed.sh
+  .xgc2/scripts/build_deb.sh
+  .xgc2/scripts/publish_apt_repo.sh
+  .xgc2/scripts/publish_self_hosted_apt.sh
+  .xgc2/scripts/smoke_test_installed.sh
 )
 
 for file in "${required_files[@]}"; do
