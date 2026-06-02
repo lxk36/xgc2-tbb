@@ -10,6 +10,10 @@ apt:
     - xgc2-tbb
   packages:
     - xgc2-tbb
+  depends:
+    - libc6
+    - libgcc-s1
+    - libstdc++6
 
 usage:
   install: |
