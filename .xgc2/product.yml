@@ -33,6 +33,11 @@ ownership:
     - /usr/lib/cmake/xgc2_tbb
     - /etc/ld.so.conf.d/xgc2-tbb.conf
 
+release:
+  repository: lxk36/xgc2-tbb
+  ref: master
+  workflow: release.yml
+
 conflicts:
   apt_packages:
     - ros-noetic-xgc2-tbb
