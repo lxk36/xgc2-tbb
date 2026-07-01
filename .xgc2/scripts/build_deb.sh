@@ -6,12 +6,21 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/../.." && pwd)"
 
 package_name="xgc2-tbb"
-version="${PACKAGE_VERSION:-0.1.0-1}"
 prefix="${XGC2_TBB_PREFIX:-/opt/xgc2/tbb}"
 stage_dir="${XGC2_TBB_STAGE_DIR:-${repo_root}/.ci/stage}"
 output_dir="${XGC2_TBB_DEB_OUTPUT_DIR:-${repo_root}/.ci/debs}"
 pkg_root="${repo_root}/.ci/pkg/${package_name}"
 arch="$(dpkg --print-architecture)"
+
+product_version() {
+  awk -F': *' '/^version:[[:space:]]*/ {print $2; exit}' "${repo_root}/.xgc2/product.yml"
+}
+
+version="${PACKAGE_VERSION:-$(product_version)}"
+if [[ -z "${version}" ]]; then
+  echo "package version is missing; set PACKAGE_VERSION or .xgc2/product.yml version" >&2
+  exit 1
+fi
 
 rm -rf "${stage_dir}" "${output_dir}" "${pkg_root}"
 mkdir -p "${output_dir}"
