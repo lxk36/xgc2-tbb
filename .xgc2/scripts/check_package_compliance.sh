@@ -38,8 +38,6 @@ required_files=(
   .xgc2/scripts/build_deb.sh
   .xgc2/scripts/build_tbb.sh
   .xgc2/scripts/fetch_tbb.sh
-  .xgc2/scripts/publish_apt_repo.sh
-  .xgc2/scripts/publish_self_hosted_apt.sh
   .xgc2/scripts/smoke_test_installed.sh
 )
 

@@ -8,7 +8,7 @@ repo_root="$(cd "${script_dir}/../.." && pwd)"
 package_name="xgc2-tbb"
 prefix="${XGC2_TBB_PREFIX:-/opt/xgc2/tbb}"
 stage_dir="${XGC2_TBB_STAGE_DIR:-${repo_root}/.ci/stage}"
-output_dir="${XGC2_TBB_DEB_OUTPUT_DIR:-${repo_root}/.ci/debs}"
+output_dir="${XGC2_TBB_DEB_OUTPUT_DIR:-${repo_root}/debs}"
 pkg_root="${repo_root}/.ci/pkg/${package_name}"
 arch="$(dpkg --print-architecture)"
 
