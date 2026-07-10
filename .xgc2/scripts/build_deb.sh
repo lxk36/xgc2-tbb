@@ -21,6 +21,10 @@ if [[ -z "${version}" ]]; then
   echo "package version is missing; set PACKAGE_VERSION or .xgc2/product.yml version" >&2
   exit 1
 fi
+package_distribution="${PACKAGE_DISTRIBUTION:-}"
+if [[ -n "${package_distribution}" && "${version}" != *"~${package_distribution}" ]]; then
+  version="${version}~${package_distribution}"
+fi
 
 rm -rf "${stage_dir}" "${output_dir}" "${pkg_root}"
 mkdir -p "${output_dir}"

@@ -82,6 +82,7 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/work" \
             -w /work \
             -e XGC2_TBB_JOBS="${XGC2_TBB_JOBS}" \
+            -e PACKAGE_DISTRIBUTION="${{ matrix.distribution }}" \
             "${{ matrix.image }}" \
             bash -lc '
               set -euo pipefail

@@ -65,4 +65,11 @@ if ! grep -q '^TBB_REF=' tbb.lock; then
   exit 1
 fi
 
+for distribution in focal jammy noble; do
+  grep -q "^[[:space:]]*${distribution}: [0-9].*~${distribution}$" .xgc2/product.yml
+done
+grep -q 'PACKAGE_DISTRIBUTION' .xgc2/scripts/build_deb.sh
+grep -q 'PACKAGE_DISTRIBUTION="${{ matrix.distribution }}"' .github/workflows/ci.yml
+grep -q 'PACKAGE_DISTRIBUTION="${{ matrix.distribution }}"' .github/workflows/release.yml
+
 echo "xgc2-tbb package compliance checks passed."
