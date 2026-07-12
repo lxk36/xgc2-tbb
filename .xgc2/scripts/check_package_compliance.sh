@@ -33,7 +33,7 @@ required_files=(
   README.md
   tbb.lock
   .github/workflows/ci.yml
-  .github/workflows/update-tbb.yml
+  .github/workflows/release.yml
   .xgc2/product.yml
   .xgc2/scripts/build_deb.sh
   .xgc2/scripts/build_tbb.sh
